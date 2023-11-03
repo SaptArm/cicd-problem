@@ -1,0 +1,88 @@
+stages:
+  - build
+  - deploy
+variables:
+  TEST_STAGE_IMAGE_APP_TAG: git.estesis.tech:5555/teboil/teboil-qr-service/dev:$CI_COMMIT_SHA
+  PROD_STAGE_IMAGE_APP_TAG: git.estesis.tech:5555/teboil/teboil-qr-service/prod:$CI_COMMIT_SHA
+  STAGE_SERVER_USER: gitlab
+  TEST_STAGE_SERVER_IP: 172.22.2.29
+  PROD_STAGE_SERVER_IP: 10.3.16.14
+teboil-lk-build-test:
+  stage: build
+  tags:
+    - test
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
+
+  script:
+    - docker build -t "$TEST_STAGE_IMAGE_APP_TAG" .
+    - docker push "$TEST_STAGE_IMAGE_APP_TAG"
+    - docker rmi -f "$TEST_STAGE_IMAGE_APP_TAG"
+  only:
+    - test
+
+teboil-lk-deploy-test:
+  image: creatiwww/docker-compose
+  stage: deploy
+  tags:
+    - test
+  before_script:
+    - 'command -v ssh-agent >/dev/null || ( apk add --update openssh )'
+    - eval $(ssh-agent -s)
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - chmod 400 "$SSH_PRIVATE_KEY_TEST"
+    - ssh-add "$SSH_PRIVATE_KEY_TEST"
+    - ssh-keyscan $TEST_STAGE_SERVER_IP > ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY;
+  script:
+    - cp .env.local .env
+    - echo "TEST_STAGE_IMAGE_APP_TAG=$TEST_STAGE_IMAGE_APP_TAG" >> .env
+    - cat .env
+    - docker-compose -f docker-compose.test.yml -H "ssh://$STAGE_SERVER_USER@$TEST_STAGE_SERVER_IP" down --remove-orphans
+    - docker-compose -f docker-compose.test.yml -H "ssh://$STAGE_SERVER_USER@$TEST_STAGE_SERVER_IP" pull
+    - docker-compose -f docker-compose.test.yml -H "ssh://$STAGE_SERVER_USER@$TEST_STAGE_SERVER_IP" up -d
+  when: manual
+  only:
+    - test
+
+teboil-lk-build-prod:
+  stage: build
+  tags:
+    - prod
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
+
+  script:
+    - docker build -t "$PROD_STAGE_IMAGE_APP_TAG" .
+    - docker push "$PROD_STAGE_IMAGE_APP_TAG"
+    - docker rmi -f "$PROD_STAGE_IMAGE_APP_TAG"
+  only:
+    - main
+
+teboil-lk-deploy-prod:
+  image: creatiwww/docker-compose
+  stage: deploy
+  tags:
+    - prod
+  before_script:
+    - 'command -v ssh-agent >/dev/null || ( apk add --update openssh )'
+    - eval $(ssh-agent -s)
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - chmod 400 "$SSH_PRIVATE_KEY_PROD"
+    - ssh-add "$SSH_PRIVATE_KEY_PROD"
+    - ssh-keyscan $PROD_STAGE_SERVER_IP > ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY;
+  script:
+    - cp .env.local .env
+    - echo "PROD_STAGE_IMAGE_APP_TAG=$PROD_STAGE_IMAGE_APP_TAG" >> .env
+    - cat .env
+    - docker-compose -H "ssh://$STAGE_SERVER_USER@$PROD_STAGE_SERVER_IP" down --remove-orphans
+    - docker-compose -H "ssh://$STAGE_SERVER_USER@$PROD_STAGE_SERVER_IP" pull
+    - docker-compose -H "ssh://$STAGE_SERVER_USER@$PROD_STAGE_SERVER_IP" up -d
+  when: manual
+  only:
+    - main
