@@ -1,5 +1,5 @@
 # cicd-problem
-
+```
 ubuntu@qr-test-restored:~/teboil-qr-service$ docker logs qr-service 
 wait-for-it.sh: waiting 15 seconds for POSTGRES_HOST:POSTGRES_PORT
 wait-for-it.sh: timeout occurred after waiting 15 seconds for POSTGRES_HOST:POSTGRES_PORT
@@ -28,3 +28,4 @@ Traceback (most recent call last):
     assert prefix.startswith("/"), "A path prefix must start with '/'"
 AssertionError: A path prefix must start with '/'
 wait-for-it.sh: waiting 15 seconds for POSTGRES_HOST:POSTGRES_PORT
+```
