@@ -2,12 +2,12 @@ stages:
   - build
   - deploy
 variables:
-  TEST_STAGE_IMAGE_APP_TAG: git.estesis.tech:5555/teboil/teboil-qr-service/dev:$CI_COMMIT_SHA
-  PROD_STAGE_IMAGE_APP_TAG: git.estesis.tech:5555/teboil/teboil-qr-service/prod:$CI_COMMIT_SHA
+  TEST_STAGE_IMAGE_APP_TAG: git.repo/qr-service/dev:$CI_COMMIT_SHA
+  PROD_STAGE_IMAGE_APP_TAG: git.repo/qr-service/prod:$CI_COMMIT_SHA
   STAGE_SERVER_USER: gitlab
   TEST_STAGE_SERVER_IP: 172.22.2.29
   PROD_STAGE_SERVER_IP: 10.3.16.14
-teboil-lk-build-test:
+qr-build-test:
   stage: build
   tags:
     - test
@@ -21,7 +21,7 @@ teboil-lk-build-test:
   only:
     - test
 
-teboil-lk-deploy-test:
+qr-deploy-test:
   image: creatiwww/docker-compose
   stage: deploy
   tags:
@@ -47,7 +47,7 @@ teboil-lk-deploy-test:
   only:
     - test
 
-teboil-lk-build-prod:
+qr-build-prod:
   stage: build
   tags:
     - prod
@@ -61,7 +61,7 @@ teboil-lk-build-prod:
   only:
     - main
 
-teboil-lk-deploy-prod:
+qr-deploy-prod:
   image: creatiwww/docker-compose
   stage: deploy
   tags:
